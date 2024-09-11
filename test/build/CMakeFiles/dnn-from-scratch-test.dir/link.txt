@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/dnn-from-scratch-test.dir/test.cpp.o -o dnn-from-scratch-test  -lgtest 

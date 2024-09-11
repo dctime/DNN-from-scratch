@@ -1,0 +1,3 @@
+/home/dctime/makegames/DNN-from-scratch/test/build/CMakeFiles/dnn-from-scratch-test.dir
+/home/dctime/makegames/DNN-from-scratch/test/build/CMakeFiles/edit_cache.dir
+/home/dctime/makegames/DNN-from-scratch/test/build/CMakeFiles/rebuild_cache.dir

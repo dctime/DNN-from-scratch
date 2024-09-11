@@ -1,0 +1,4 @@
+CompileFlags:
+  Add:
+    - "-Igoogletest/googletest/include"
+    - "-I./external/glad/include"
