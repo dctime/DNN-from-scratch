@@ -26,6 +26,17 @@ int main() {
 
   gladLoadGLLoader(SDL_GL_GetProcAddress);
 
+  float positions[6] = {
+    -0.5f, -0.5f,
+    0.0f, 0.5f,
+    0.5f, -0.5f
+  };
+
+  unsigned int buffer;
+  glad_glGenBuffers(1, &buffer);
+  glad_glBindBuffer(GL_ARRAY_BUFFER, buffer);
+  glad_glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
+
   bool windowRunning = true;
   while (windowRunning) {
     glViewport(0, 0, 1080, 720);
@@ -36,8 +47,10 @@ int main() {
       }
     }
 
-    glad_glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    glad_glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glad_glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 
     SDL_GL_SwapWindow(window);
     
