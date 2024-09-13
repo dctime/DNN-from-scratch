@@ -8,5 +8,5 @@ add_executable(${PROJECT_NAME} main.cpp external/glad/src/glad.c)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/external/glad/include)
 
-target_link_libraries(${PROJECT_NAME} SDL2)
+target_link_libraries(${PROJECT_NAME} sfml-graphics sfml-window sfml-system)
 
