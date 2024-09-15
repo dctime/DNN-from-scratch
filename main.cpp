@@ -10,11 +10,13 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
+// use renderImageInWindow() to update the renderer
 struct ImageRenderer {
   sf::RenderWindow &window;
   sf::Sprite sprite;
   sf::Vector2f topLeftPosition;
   sf::Vector2f size;
+  sf::Image image; // Store the image once
 
   sf::Vector2f getScreenLocation(int x, int y) const {
     if (x > 27)
@@ -38,18 +40,56 @@ struct ImageRenderer {
       }
     }
   }
+
+  // New function to get grayscale value at (x, y)
+  float getGrayscaleValue(int x, int y) const {
+    if (x < 0 || x >= 28 || y < 0 || y >= 28) {
+      throw std::out_of_range("Coordinates out of range");
+    }
+
+    sf::Color color = image.getPixel(x, y);
+
+    // Since the image is grayscale, the red, green, and blue values are the
+    // same std::cout << "R: " << static_cast<int>(color.r) << std::endl;
+    return (color.r / 255.0);
+  }
+
+  // New function to update the image
+  void updateImage() { image = sprite.getTexture()->copyToImage(); }
 };
 
 struct NeuralNetwork {
   std::vector<int> layers;
   std::vector<std::vector<float>> weights;
   std::vector<float> neuralValues;
+
+  // Function to change the values of the first layer
+  void changeFirstLayerValues(const std::vector<float> &newValues) {
+    if (!layers.empty() && layers[0] > 0) {
+      // Ensure the new values match the size of the first layer
+      if (newValues.size() == layers[0]) {
+        for (size_t i = 0; i < newValues.size(); ++i) {
+          neuralValues[i] = newValues[i];
+        }
+      } else {
+        // Handle the case where the size does not match
+        throw std::invalid_argument(
+            "Size of new values does not match the size of the first layer.");
+      }
+    } else {
+      throw std::runtime_error("First layer is not properly defined.");
+    }
+  }
 };
 
-void createNeuralNetwork(NeuralNetwork &nn) {
-  nn.layers = {784, 64, 64,
-               10}; // Example layers: 784 input nodes, 128 in the first hidden
-                    // layer, 64 in the second hidden layer, and 10 output nodes
+void createNeuralNetwork(NeuralNetwork &nn, std::vector<int> layersNodeCount) {
+  // nn.layers = {784, 64, 64,
+  //              10}; // Example layers: 784 input nodes, 128 in the first
+  //              hidden
+  //                   // layer, 64 in the second hidden layer, and 10 output
+  //                   nodes
+
+  nn.layers = layersNodeCount;
 
   // Initialize weights with random values
   srand(static_cast<unsigned>(time(0))); // Seed for random number generation
@@ -78,6 +118,7 @@ void createNeuralNetwork(NeuralNetwork &nn) {
 void renderImageInWindow(sf::RenderWindow &window, const std::string &imagePath,
                          sf::Vector2f position, sf::Vector2f size,
                          ImageRenderer &renderer) {
+
   // Load the texture
   sf::Texture texture;
   if (!texture.loadFromFile(imagePath)) {
@@ -142,6 +183,8 @@ void renderImageInWindow(sf::RenderWindow &window, const std::string &imagePath,
   renderer.sprite = sprite;
   renderer.topLeftPosition = topLeftPosition;
   renderer.size = size;
+
+  renderer.updateImage();
 }
 
 void drawNeuralNetwork(sf::RenderWindow &window, const NeuralNetwork &nn,
@@ -157,16 +200,22 @@ void drawNeuralNetwork(sf::RenderWindow &window, const NeuralNetwork &nn,
 
   std::vector<std::vector<sf::CircleShape>> neurons;
 
+  int currentLayerNodeNoStartsAt = 0;
   // Create and position neurons
   for (size_t i = 0; i < nn.layers.size(); ++i) {
+    // i: layer no
     std::vector<sf::CircleShape> layer_neurons;
 
     for (int j = 0; j < nn.layers[i]; ++j) {
+      // j: node id
       sf::CircleShape neuron(NEURON_RADIUS);
       sf::Color neuronColor = NEURON_COLOR;
       neuronColor.a =
-          static_cast<sf::Uint8>(nn.neuralValues[i * nn.layers[i] + j] *
+          static_cast<sf::Uint8>(nn.neuralValues[currentLayerNodeNoStartsAt + j] *
                                  255); // Set alpha based on neuralValues
+      if (currentLayerNodeNoStartsAt + j == 802) {
+        std::cout << "Neural Color: " << static_cast<int>(neuronColor.a) << std::endl;
+      }
       neuron.setFillColor(neuronColor);
       float x = (i + 1) * HORIZONTAL_SPACING + offsetX - NEURON_RADIUS +
                 (NEURON_RADIUS * 3) * (int)(j / MAX_COUNT_PER_COLUMN);
@@ -185,6 +234,9 @@ void drawNeuralNetwork(sf::RenderWindow &window, const NeuralNetwork &nn,
 
       layer_neurons.push_back(neuron);
     }
+    currentLayerNodeNoStartsAt += nn.layers[i];
+    std::cout << "CurrentLayerNodeNoStartsAt: " << currentLayerNodeNoStartsAt << std::endl;
+
     neurons.push_back(layer_neurons);
   }
 
@@ -199,12 +251,13 @@ void drawNeuralNetwork(sf::RenderWindow &window, const NeuralNetwork &nn,
         if (weight >= 0) {
           lineColor = sf::Color(
               255, 0, 0,
-              static_cast<sf::Uint8>(weight * 64)); // Red for positive weights, MAX set to 128
+              static_cast<sf::Uint8>(
+                  weight * 64)); // Red for positive weights, MAX set to 128
         } else {
-          lineColor =
-              sf::Color(0, 255, 0,
-                        static_cast<sf::Uint8>(
-                            -weight * 64)); // Green for negative weights, MAX set to 128
+          lineColor = sf::Color(
+              0, 255, 0,
+              static_cast<sf::Uint8>(
+                  -weight * 64)); // Green for negative weights, MAX set to 128
         }
         sf::Vertex line[] = {
             sf::Vertex(neurons[i][j].getPosition() +
@@ -234,14 +287,21 @@ int main() {
   sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
                           "Neural Network Visualization");
 
+  // NeuralNetwork nn;
+  // createNeuralNetwork(nn);
+
+  // Create an instance of NeuralNetwork
   NeuralNetwork nn;
-  createNeuralNetwork(nn);
+  std::vector<int> layers = {28 * 28, 8, 8, 3};
+  createNeuralNetwork(nn, layers);
 
   // Print the size of each layer to verify
   for (size_t i = 0; i < nn.layers.size(); ++i) {
     std::cout << "Layer " << i << ": " << nn.layers[i] << " neurons"
               << std::endl;
   }
+
+  ImageRenderer renderer{window, sf::Sprite(), sf::Vector2f(), sf::Vector2f()};
 
   while (window.isOpen()) {
     sf::Event event;
@@ -257,21 +317,33 @@ int main() {
         window.getSize().y / 2.0f); // Position where the image will be rendered
     sf::Vector2f size(300, 300);    // Size of the image
 
-    ImageRenderer renderer{window, sf::Sprite(), sf::Vector2f(),
-                           sf::Vector2f()};
-
     int firstLayerSize;
     std::vector<sf::Vector2f> firstLayerNodes;
 
     renderImageInWindow(window, "../mnist_png/testing/0/3.png", position, size,
                         renderer);
-    // renderImageInWindow(window, "../mnist_png/testing/0/3.png", position,
-    // size);
+
+    // New values for the first layer
+    std::vector<float> newValues;
+    for (int x = 0; x < 28; x++) {
+      for (int y = 0; y < 28; y++) {
+        newValues.push_back(renderer.getGrayscaleValue(x, y));
+      }
+    }
+
+    // Change the values of the first layer
+    try {
+      nn.changeFirstLayerValues(newValues);
+
+    } catch (const std::exception &e) {
+      std::cerr << "Error: " << e.what() << std::endl;
+    }
 
     float offsetX = 100.f; // Example offset X
     float offsetY = 0.f;   // Example offset Y
 
     renderer.renderPoints();
+
     // Draw the neural network
     drawNeuralNetwork(window, nn, offsetX, offsetY);
 
