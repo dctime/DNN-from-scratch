@@ -112,38 +112,78 @@ void renderImageInWindow(sf::RenderWindow &window, const std::string &imagePath,
 static std::vector<std::vector<sf::CircleShape>>
 createNeuronsForRendering(const NeuralNetwork &nn, float offsetX,
                           float offsetY) {
-  const float NEURON_RADIUS = 3.f;
   const float HORIZONTAL_SPACING = WINDOW_WIDTH / (nn.layers.size() + 2);
-  const sf::Color NEURON_COLOR = sf::Color::White;
   const int MAX_COUNT_PER_COLUMN = 28;
+  const float FIRST_LAYER_NEURON_RADIUS = 3.f;
+  const float NEURON_RADIUS = 5.f;
 
   std::vector<std::vector<sf::CircleShape>> neurons;
   int currentLayerNodeNoStartsAt = 0;
 
+  // Seed the random number generator
+  std::srand(static_cast<unsigned>(std::time(nullptr)));
+
+  int outlineNodesCurrentFilled = 0;
   for (size_t i = 0; i < nn.layers.size(); ++i) {
     std::vector<sf::CircleShape> layer_neurons;
+    float neuron_radius;
+
+    if (i == 0) {
+      neuron_radius = FIRST_LAYER_NEURON_RADIUS;
+    } else {
+      neuron_radius = NEURON_RADIUS;
+    }
+
     for (int j = 0; j < nn.layers[i]; ++j) {
-      sf::CircleShape neuron(NEURON_RADIUS);
-      sf::Color neuronColor = NEURON_COLOR;
+      sf::CircleShape neuron(neuron_radius);
+
+      // Set fill color based on neural values
+      sf::Color neuronColor = sf::Color::White;
       neuronColor.a = static_cast<sf::Uint8>(
           nn.neuralValues[currentLayerNodeNoStartsAt + j] * 255);
       neuron.setFillColor(neuronColor);
 
-      float x = (i + 1) * HORIZONTAL_SPACING + offsetX - NEURON_RADIUS +
-                (NEURON_RADIUS * 3) * (int)(j / MAX_COUNT_PER_COLUMN);
+      sf::Color borderColor;
+
+      if (i == 0) {
+        borderColor.r = 0;
+        borderColor.g = 0;
+        borderColor.b = 0;
+        borderColor.a = 0;
+      } else {
+        float bias = nn.bias[outlineNodesCurrentFilled + j];
+        if (bias >= 0) {
+          // red
+          borderColor = sf::Color::Red;
+          borderColor.a = 255 * bias;
+        } else {
+          // green
+          borderColor = sf::Color::Green;
+          borderColor.a = 255 * bias;
+        }
+      }
+      
+      neuron.setOutlineColor(borderColor);
+      neuron.setOutlineThickness(2.5f);
+
+      float x = (i + 1) * HORIZONTAL_SPACING + offsetX - neuron_radius +
+                (neuron_radius * 3) * (int)(j / MAX_COUNT_PER_COLUMN);
       int nodesPerRow =
           ((j / MAX_COUNT_PER_COLUMN + 1) * MAX_COUNT_PER_COLUMN) > nn.layers[i]
               ? nn.layers[i] % MAX_COUNT_PER_COLUMN
               : MAX_COUNT_PER_COLUMN;
       float layer_height = WINDOW_HEIGHT / (nodesPerRow + 2);
       float y = ((j % MAX_COUNT_PER_COLUMN) + 1) * layer_height -
-                NEURON_RADIUS + offsetY;
+                neuron_radius + offsetY;
       neuron.setPosition(x, y);
 
       layer_neurons.push_back(neuron);
     }
     currentLayerNodeNoStartsAt += nn.layers[i];
     neurons.push_back(layer_neurons);
+    if (i != 0) {
+      outlineNodesCurrentFilled += nn.layers[i];
+    }
   }
 
   return neurons;
@@ -152,7 +192,6 @@ createNeuronsForRendering(const NeuralNetwork &nn, float offsetX,
 static void
 drawConnections(sf::RenderWindow &window, const NeuralNetwork &nn,
                 const std::vector<std::vector<sf::CircleShape>> &neurons) {
-  const float NEURON_RADIUS = 3.f;
   const float HORIZONTAL_SPACING = WINDOW_WIDTH / (nn.layers.size() + 2);
   const sf::Color NEURON_COLOR = sf::Color::White;
   const int MAX_COUNT_PER_COLUMN = 28;
@@ -172,10 +211,10 @@ drawConnections(sf::RenderWindow &window, const NeuralNetwork &nn,
         }
         sf::Vertex line[] = {
             sf::Vertex(neurons[i][j].getPosition() +
-                           sf::Vector2f(NEURON_RADIUS, NEURON_RADIUS),
+                           sf::Vector2f(neurons[i][j].getRadius(), neurons[i][j].getRadius()),
                        lineColor),
             sf::Vertex(neurons[i + 1][k].getPosition() +
-                           sf::Vector2f(NEURON_RADIUS, NEURON_RADIUS),
+                           sf::Vector2f(neurons[i+1][k].getRadius(), neurons[i+1][k].getRadius()),
                        lineColor)};
         if (line[0].color.a == 0) {
           line[0].color = INACTIVE_COLOR;
