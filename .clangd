@@ -2,3 +2,4 @@ CompileFlags:
   Add:
     - "-Igoogletest/googletest/include"
     - "-I./external/glad/include"
+    - "-I./eigen-3.4.0"

@@ -8,8 +8,8 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-#include "neural_network.cpp"
-#include "render.cpp"
+#include "neural_network.h"
+#include "render.h"
 
 int main() {
   sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
@@ -46,20 +46,21 @@ int main() {
     int firstLayerSize;
     std::vector<sf::Vector2f> firstLayerNodes;
 
-    renderImageInWindow(window, "../mnist_png/testing/0/3.png", position, size,
+    renderImageInWindow(window, "mnist_png/testing/0/3.png", position, size,
                         renderer);
 
     // New values for the first layer
-    std::vector<float> newValues;
+    Eigen::MatrixXd imageMatrix(28*28, 1);
     for (int x = 0; x < 28; x++) {
       for (int y = 0; y < 28; y++) {
-        newValues.push_back(renderer.getGrayscaleValue(x, y));
+        // rotation the image so that the render is good
+        imageMatrix(y + 28*x) = renderer.getGrayscaleValue(x, y);
       }
     }
 
     // Change the values of the first layer
     try {
-      nn.changeFirstLayerValues(newValues);
+      nn.changeFirstLayerValues(imageMatrix);
 
     } catch (const std::exception &e) {
       std::cerr << "Error: " << e.what() << std::endl;

@@ -140,7 +140,7 @@ createNeuronsForRendering(const NeuralNetwork &nn, float offsetX,
       // Set fill color based on neural values
       sf::Color neuronColor = sf::Color::White;
       neuronColor.a = static_cast<sf::Uint8>(
-          nn.neuralValues[currentLayerNodeNoStartsAt + j] * 255);
+          nn.neuralValues[i](j, 0) * 255);
       neuron.setFillColor(neuronColor);
 
       sf::Color borderColor;
@@ -151,7 +151,7 @@ createNeuronsForRendering(const NeuralNetwork &nn, float offsetX,
         borderColor.b = 0;
         borderColor.a = 0;
       } else {
-        float bias = nn.bias[outlineNodesCurrentFilled + j];
+        float bias = nn.bias[i-1](j, 0);
         if (bias >= 0) {
           // red
           borderColor = sf::Color::Red;
@@ -198,10 +198,13 @@ drawConnections(sf::RenderWindow &window, const NeuralNetwork &nn,
 
   const sf::Color INACTIVE_COLOR = sf::Color(255, 255, 255, 50);
 
+  // layer i
   for (size_t i = 0; i < neurons.size() - 1; ++i) {
+    // layer i loop
     for (size_t j = 0; j < neurons[i].size(); ++j) {
+      // layer i+1 loop
       for (size_t k = 0; k < neurons[i + 1].size(); ++k) {
-        float weight = nn.weights[i][j * neurons[i + 1].size() + k];
+        float weight = nn.weights[i](j, k);
         sf::Color lineColor;
         if (weight >= 0) {
           lineColor = sf::Color(255, 0, 0, static_cast<sf::Uint8>(weight * 64));

@@ -6,37 +6,21 @@
 #include "neural_network.h"
 
 // Function to change the values of the first layer
-void NeuralNetwork::changeFirstLayerValues(const std::vector<float> &newValues) {
-  if (!layers.empty() && layers[0] > 0) {
-    // Ensure the new values match the size of the first layer
-    if (newValues.size() == layers[0]) {
-      for (std::size_t i = 0; i < newValues.size(); ++i) {
-        neuralValues[i] = newValues[i];
-      }
-    } else {
-      // Handle the case where the size does not match
-      throw std::invalid_argument(
-          "Size of new values does not match the size of the first layer.");
-    }
-  } else {
+void NeuralNetwork::changeFirstLayerValues(Eigen::MatrixXd& newValues) {
+  if (layers.empty() || layers[0] <= 0) {
     throw std::runtime_error("First layer is not properly defined.");
   }
-}
 
-// Function to set the bias values
-void NeuralNetwork::setBiases(const std::vector<float> &newBiases) {
-  if (newBiases.size() == bias.size()) {
-    for (size_t i = 0; i < newBiases.size(); ++i) {
-      bias[i] = newBiases[i];
-    }
-  } else {
-    // Handle the case where the size does not match
-    throw std::invalid_argument(
-        "Size of new biases does not match the size of the bias vector.");
+  // Ensure the new values match the size of the first layer
+  if (newValues.rows() != layers[0]) {
+    throw std::invalid_argument("Size of new values does not match the size of the first layer.");
   }
+
+  // Update the neural values for the first layer
+  neuralValues[0] = newValues;
 }
 
-void createNeuralNetwork(NeuralNetwork &nn, std::vector<int> layersNodeCount) {
+void createNeuralNetwork(NeuralNetwork &nn, const std::vector<int>& layersNodeCount) {
   nn.layers = layersNodeCount;
 
   // Clear existing values
@@ -44,38 +28,47 @@ void createNeuralNetwork(NeuralNetwork &nn, std::vector<int> layersNodeCount) {
   nn.neuralValues.clear();
   nn.bias.clear();
 
+  // Seed for random number generation
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> weight_dist(-1.0, 1.0);
+  std::uniform_real_distribution<float> bias_dist(-1.0, 1.0);
+  std::uniform_real_distribution<float> neural_value_dist(0.0, 1.0);
+
   // Initialize weights with random values
-  srand(static_cast<unsigned>(time(0))); // Seed for random number generation
   for (size_t i = 0; i < nn.layers.size() - 1; ++i) {
-    std::vector<float> layer_weights;
-    for (int j = 0; j < nn.layers[i] * nn.layers[i + 1]; ++j) {
-      std::random_device rd;
-      std::mt19937 gen(rd());
-      std::uniform_real_distribution<float> dist(-1.0, 1.0);
-      layer_weights.push_back(
-          static_cast<float>(dist(gen))); // Random weights between -1 and 1
+    Eigen::MatrixXd layer_weights = Eigen::MatrixXd::Zero(nn.layers[i], nn.layers[i + 1]);
+    for (int row = 0; row < layer_weights.rows(); ++row) {
+      for (int col = 0; col < layer_weights.cols(); ++col) {
+        layer_weights(row, col) = weight_dist(gen);
+      }
     }
     nn.weights.push_back(layer_weights);
   }
 
   // Initialize neural values with random values
   for (int layer_size : nn.layers) {
-    for (int j = 0; j < layer_size; ++j) {
-      nn.neuralValues.push_back(
-          static_cast<float>(rand()) /
-          RAND_MAX); // Random neural values between 0 and 1
+    Eigen::MatrixXd layer_values = Eigen::MatrixXd::Zero(layer_size, 1);
+    for (int row = 0; row < layer_values.rows(); ++row) {
+      layer_values(row, 0) = neural_value_dist(gen);
     }
+    nn.neuralValues.push_back(layer_values);
   }
 
   // Initialize biases with random values
   for (size_t i = 1; i < nn.layers.size(); ++i) {
-    std::vector<float> layer_biases(nn.layers[i]);
-    for (int j = 0; j < nn.layers[i]; ++j) {
-      std::random_device rd;
-      std::mt19937 gen(rd());
-      std::uniform_real_distribution<float> dist(-1.0, 1.0);
-      nn.bias.push_back(
-          static_cast<float>(dist(gen))); // Random biases between -1 and 1
+    Eigen::MatrixXd layer_biases = Eigen::MatrixXd::Zero(nn.layers[i], 1);
+    for (int row = 0; row < layer_biases.rows(); ++row) {
+      layer_biases(row, 0) = bias_dist(gen);
     }
+    nn.bias.push_back(layer_biases);
   }
+}
+
+
+void NeuralNetwork::forwardPropagation(int layer) {
+  if (layer <= 0 || layer >= layers.size()) {
+    throw std::out_of_range("Layer index out of range or invalid.");
+  }
+
 }

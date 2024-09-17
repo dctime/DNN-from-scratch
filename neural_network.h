@@ -1,14 +1,18 @@
 #pragma once
 
 #include <vector>
+#include <Eigen/Dense>
 
 struct NeuralNetwork {
   std::vector<int> layers;
-  std::vector<std::vector<float>> weights;
-  std::vector<float> neuralValues;
-  std::vector<float> bias; // Added bias member
+  std::vector<Eigen::MatrixXd> weights;
+  std::vector<Eigen::MatrixXd> neuralValues;
+  std::vector<Eigen::MatrixXd> bias; // Added bias member
   
-  void changeFirstLayerValues(const std::vector<float> &newValues);
-  void setBiases(const std::vector<float> &newBiases);
+  void changeFirstLayerValues(Eigen::MatrixXd& newValues);
+
+  // layer much be greater than 0
+  void forwardPropagation(int layer);
 };
 
+void createNeuralNetwork(NeuralNetwork &nn, const std::vector<int>& layersNodeCount);

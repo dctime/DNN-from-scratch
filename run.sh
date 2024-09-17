@@ -1,2 +1,1 @@
-cd build
-./dnn-from-scratch
+./build/dnn-from-scratch
