@@ -15,9 +15,8 @@ struct ImageRenderer {
   void updateImage();
 };
 
-void renderImageInWindow(sf::RenderWindow &window, const std::string &imagePath,
-                         sf::Vector2f position, sf::Vector2f size,
-                         ImageRenderer &renderer);
+void renderImageInWindow(sf::RenderWindow &window, const std::string &zipFilePath, const std::string &imagePath,
+                         sf::Vector2f position, sf::Vector2f size, ImageRenderer &renderer);
 
 static std::vector<std::vector<sf::CircleShape>>
 createNeuronsForRendering(const NeuralNetwork &nn, float offsetX,

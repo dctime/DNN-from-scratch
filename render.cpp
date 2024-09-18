@@ -1,3 +1,6 @@
+#include <iostream>
+#include <zip.h>
+
 #include "constants.h"
 
 #include <SFML/Graphics.hpp>
@@ -37,77 +40,112 @@ void ImageRenderer::updateImage() {
   image = sprite.getTexture()->copyToImage();
 }
 
-void renderImageInWindow(sf::RenderWindow &window, const std::string &imagePath,
-                         sf::Vector2f position, sf::Vector2f size,
-                         ImageRenderer &renderer) {
+static bool extractImageFromZip(const std::string& zipFilePath, const std::string& imagePath, std::vector<char>& imageBuffer) {
+    zip* archive = zip_open(zipFilePath.c_str(), 0, NULL);
+    if (!archive) {
+        std::cerr << "Failed to open the zip file." << std::endl;
+        return false;
+    }
 
-  // Load the texture
-  sf::Texture texture;
-  if (!texture.loadFromFile(imagePath)) {
-    std::cerr << "Error loading image" << std::endl;
-    return;
-  }
+    struct zip_stat fileInfo;
+    zip_stat_init(&fileInfo);
+    if (zip_stat(archive, imagePath.c_str(), 0, &fileInfo) != 0) {
+        std::cerr << "Failed to get file info." << std::endl;
+        zip_close(archive);
+        return false;
+    }
 
-  // Create a sprite
-  sf::Sprite sprite;
-  sprite.setTexture(texture);
+    zip_file* file = zip_fopen(archive, fileInfo.name, 0);
+    if (!file) {
+        std::cerr << "Failed to open the file in the zip archive." << std::endl;
+        zip_close(archive);
+        return false;
+    }
 
-  // Set the size
-  sprite.setScale(size.x / texture.getSize().x, size.y / texture.getSize().y);
+    imageBuffer.resize(fileInfo.size);
+    zip_fread(file, imageBuffer.data(), fileInfo.size);
+    zip_fclose(file);
+    zip_close(archive);
 
-  // Calculate the top-left position
-  sf::Vector2f topLeftPosition =
-      position - sf::Vector2f(size.x / 2.0f, size.y / 2.0f);
-
-  // Set the position
-  sprite.setPosition(topLeftPosition);
-
-  // Draw the sprite
-  window.draw(sprite);
-
-  // Draw white lines to cut the image into 28x28 pixels
-  sf::RectangleShape line(sf::Vector2f(size.x, 1)); // Horizontal line
-  line.setFillColor(sf::Color(128, 128, 128));
-
-  for (int i = 1; i < 28; ++i) {
-    line.setPosition(topLeftPosition.x,
-                     topLeftPosition.y + i * (size.y / 28.0f));
-    window.draw(line);
-  }
-
-  line.setSize(sf::Vector2f(1, size.y)); // Vertical line
-
-  for (int i = 1; i < 28; ++i) {
-    line.setPosition(topLeftPosition.x + i * (size.x / 28.0f),
-                     topLeftPosition.y);
-    window.draw(line);
-  }
-
-  // Draw borders
-  sf::RectangleShape border(sf::Vector2f(size.x, 1)); // Top border
-  border.setFillColor(sf::Color::White);
-  border.setPosition(topLeftPosition.x, topLeftPosition.y);
-  window.draw(border);
-
-  border.setSize(sf::Vector2f(size.x, 1)); // Bottom border
-  border.setPosition(topLeftPosition.x, topLeftPosition.y + size.y);
-  window.draw(border);
-
-  border.setSize(sf::Vector2f(1, size.y)); // Left border
-  border.setPosition(topLeftPosition.x, topLeftPosition.y);
-  window.draw(border);
-
-  border.setSize(sf::Vector2f(1, size.y)); // Right border
-  border.setPosition(topLeftPosition.x + size.x, topLeftPosition.y);
-  window.draw(border);
-
-  // Update the renderer struct
-  renderer.sprite = sprite;
-  renderer.topLeftPosition = topLeftPosition;
-  renderer.size = size;
-
-  renderer.updateImage();
+    return true;
 }
+
+
+void renderImageInWindow(sf::RenderWindow &window, const std::string &zipFilePath, const std::string &imagePath,
+                         sf::Vector2f position, sf::Vector2f size, ImageRenderer &renderer) {
+
+    // Extract the image from the zip file
+    std::vector<char> imageBuffer;
+    if (!extractImageFromZip(zipFilePath, imagePath, imageBuffer)) {
+        std::cerr << "Error extracting image from zip file" << std::endl;
+        return;
+    }
+
+    // Load the texture from the buffer
+    sf::Texture texture;
+    if (!texture.loadFromMemory(imageBuffer.data(), imageBuffer.size())) {
+        std::cerr << "Error loading image from buffer" << std::endl;
+        return;
+    }
+
+    // Create a sprite
+    sf::Sprite sprite;
+    sprite.setTexture(texture);
+
+    // Set the size
+    sprite.setScale(size.x / texture.getSize().x, size.y / texture.getSize().y);
+
+    // Calculate the top-left position
+    sf::Vector2f topLeftPosition = position - sf::Vector2f(size.x / 2.0f, size.y / 2.0f);
+
+    // Set the position
+    sprite.setPosition(topLeftPosition);
+
+    // Draw the sprite
+    window.draw(sprite);
+
+    // Draw white lines to cut the image into 28x28 pixels
+    sf::RectangleShape line(sf::Vector2f(size.x, 1)); // Horizontal line
+    line.setFillColor(sf::Color(128, 128, 128));
+
+    for (int i = 1; i < 28; ++i) {
+        line.setPosition(topLeftPosition.x, topLeftPosition.y + i * (size.y / 28.0f));
+        window.draw(line);
+    }
+
+    line.setSize(sf::Vector2f(1, size.y)); // Vertical line
+
+    for (int i = 1; i < 28; ++i) {
+        line.setPosition(topLeftPosition.x + i * (size.x / 28.0f), topLeftPosition.y);
+        window.draw(line);
+    }
+
+    // Draw borders
+    sf::RectangleShape border(sf::Vector2f(size.x, 1)); // Top border
+    border.setFillColor(sf::Color::White);
+    border.setPosition(topLeftPosition.x, topLeftPosition.y);
+    window.draw(border);
+
+    border.setSize(sf::Vector2f(size.x, 1)); // Bottom border
+    border.setPosition(topLeftPosition.x, topLeftPosition.y + size.y);
+    window.draw(border);
+
+    border.setSize(sf::Vector2f(1, size.y)); // Left border
+    border.setPosition(topLeftPosition.x, topLeftPosition.y);
+    window.draw(border);
+
+    border.setSize(sf::Vector2f(1, size.y)); // Right border
+    border.setPosition(topLeftPosition.x + size.x, topLeftPosition.y);
+    window.draw(border);
+
+    // Update the renderer struct
+    renderer.sprite = sprite;
+    renderer.topLeftPosition = topLeftPosition;
+    renderer.size = size;
+
+    renderer.updateImage();
+}
+
 
 static std::vector<std::vector<sf::CircleShape>>
 createNeuronsForRendering(const NeuralNetwork &nn, float offsetX,

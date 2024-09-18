@@ -46,7 +46,7 @@ int main() {
     int firstLayerSize;
     std::vector<sf::Vector2f> firstLayerNodes;
 
-    renderImageInWindow(window, "mnist_png/testing/0/3.png", position, size,
+    renderImageInWindow(window, "mnist_png.zip", "mnist_png/testing/0/3.png", position, size,
                         renderer);
 
     // New values for the first layer
