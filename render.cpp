@@ -242,7 +242,7 @@ drawConnections(sf::RenderWindow &window, const NeuralNetwork &nn,
     for (size_t j = 0; j < neurons[i].size(); ++j) {
       // layer i+1 loop
       for (size_t k = 0; k < neurons[i + 1].size(); ++k) {
-        float weight = nn.weights[i](j, k);
+        float weight = nn.weights[i](k, j);
         sf::Color lineColor;
         if (weight >= 0) {
           lineColor = sf::Color(255, 0, 0, static_cast<sf::Uint8>(weight * 64));

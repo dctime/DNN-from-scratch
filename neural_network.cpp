@@ -1,4 +1,5 @@
 #include <ctime>
+#include <iostream>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -37,7 +38,7 @@ void createNeuralNetwork(NeuralNetwork &nn, const std::vector<int>& layersNodeCo
 
   // Initialize weights with random values
   for (size_t i = 0; i < nn.layers.size() - 1; ++i) {
-    Eigen::MatrixXd layer_weights = Eigen::MatrixXd::Zero(nn.layers[i], nn.layers[i + 1]);
+    Eigen::MatrixXd layer_weights = Eigen::MatrixXd::Zero(nn.layers[i+1], nn.layers[i]);
     for (int row = 0; row < layer_weights.rows(); ++row) {
       for (int col = 0; col < layer_weights.cols(); ++col) {
         layer_weights(row, col) = weight_dist(gen);
@@ -65,10 +66,14 @@ void createNeuralNetwork(NeuralNetwork &nn, const std::vector<int>& layersNodeCo
   }
 }
 
-
 void NeuralNetwork::forwardPropagation(int layer) {
   if (layer <= 0 || layer >= layers.size()) {
     throw std::out_of_range("Layer index out of range or invalid.");
   }
 
+  // std::cout << "Weights Size: " << weights[layer-1].rows() << "x" << weights[layer-1].cols();
+  // std::cout << "Neural Values Size: " << neuralValues[layer-1].rows() << "x" << neuralValues[layer-1].cols();
+  // std::cout << "Bias Size: " << bias[layer-1].rows() << "x" << bias[layer-1].cols();
+
+  neuralValues[layer] = weights[layer-1] * neuralValues[layer-1] + bias[layer-1];
 }

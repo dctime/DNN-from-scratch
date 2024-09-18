@@ -33,6 +33,18 @@ int main() {
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed)
         window.close();
+
+      if (event.type == sf::Event::KeyPressed) {
+        if (event.key.code == sf::Keyboard::Num1) {
+          nn.forwardPropagation(1);
+        }
+        if (event.key.code == sf::Keyboard::Num2) {
+          nn.forwardPropagation(2);
+        }
+        if (event.key.code == sf::Keyboard::Num3) {
+          nn.forwardPropagation(3);
+        }
+      }
     }
 
     window.clear();
@@ -46,15 +58,15 @@ int main() {
     int firstLayerSize;
     std::vector<sf::Vector2f> firstLayerNodes;
 
-    renderImageInWindow(window, "mnist_png.zip", "mnist_png/testing/0/3.png", position, size,
-                        renderer);
+    renderImageInWindow(window, "mnist_png.zip", "mnist_png/testing/0/3.png",
+                        position, size, renderer);
 
     // New values for the first layer
-    Eigen::MatrixXd imageMatrix(28*28, 1);
+    Eigen::MatrixXd imageMatrix(28 * 28, 1);
     for (int x = 0; x < 28; x++) {
       for (int y = 0; y < 28; y++) {
         // rotation the image so that the render is good
-        imageMatrix(y + 28*x) = renderer.getGrayscaleValue(x, y);
+        imageMatrix(y + 28 * x) = renderer.getGrayscaleValue(x, y);
       }
     }
 
